@@ -542,7 +542,7 @@ class Thumbs
 	}
 
 	
-	public function watermark($file, $position = 'center') 
+	public function watermark($file, $position = 'center', $transparency = 100) 
 	{
 		if (empty($file)) {
 			throw new Exception('Файл маски не найден');
@@ -610,8 +610,7 @@ class Thumbs
 						break;
 				}
 
-				//imagecopy($this->img, $dest, $x, $y, 0, 0, $info[0], $info[1]); 
-				imagecopymerge($this->img, $dest, $x, $y, 0, 0, $info[0], $info[1], 100); 
+				imagecopymerge($this->img, $dest, $x, $y, 0, 0, $info[0], $info[1], $transparency); 
 			}
 		}
 	}
