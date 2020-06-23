@@ -541,8 +541,32 @@ class Thumbs
 		$this->rotate(90);
 	}
 
-	
-	public function watermark($file, $position = 'center', $transparency = 100) 
+	public function opacity($image, $opacity)
+	{
+		$width  = imagesx($image);
+		$height = imagesy($image);
+
+		$tmp = imagecreatetruecolor($width, $height);
+		imagealphablending($tmp, false);
+		imagefill($tmp, 0, 0, imagecolortransparent($tmp));
+		imagecopy($tmp, $image, 0, 0, 0, 0, $width, $height);
+
+		for ($x = 0; $x < $width; ++$x) {
+			for ($y = 0; $y < $height; ++$y) {
+				$pixelColor = imagecolorat($tmp, $x, $y);
+				$pixelOpacity = 127 - (($pixelColor >> 24) & 0xFF);
+				if ($pixelOpacity > 0) {
+					$pixelOpacity = $pixelOpacity * $opacity;
+					$pixelColor = ($pixelColor & 0xFFFFFF) | ((int)round( 127 - $pixelOpacity) << 24);
+					imagesetpixel($tmp, $x, $y, $pixelColor);
+				}
+			}
+		}
+
+		return $tmp;
+	}
+
+	public function watermark($file, $position = 'center', $transparency = 1) 
 	{
 		if (empty($file)) {
 			throw new Exception('Файл маски не найден');
@@ -560,8 +584,14 @@ class Thumbs
 						break;	
 					case 3: 
 						$dest = imageCreateFromPng($file); 
+						$transparent = imagecolorallocatealpha($dest, 0, 0, 0, 127); 
+						imagefill($dest, 0, 0, $transparent); 
+						imagecolortransparent($dest, $transparent);
+						
 						imageAlphaBlending($dest, true);
-						imageSaveAlpha($dest, true);	
+						imageSaveAlpha($dest, true);
+						
+						
 						break;
 					case 18: 
 						$dest = imageCreatefromWebp($file); 
@@ -610,7 +640,8 @@ class Thumbs
 						break;
 				}
 
-				imagecopymerge($this->img, $dest, $x, $y, 0, 0, $info[0], $info[1], $transparency); 
+				$dest = $this->opacity($dest, $transparency);
+				imagecopy($this->img, $dest, $x, $y, 0, 0, $info[0], $info[1]);
 			}
 		}
 	}
@@ -659,7 +690,7 @@ class Thumbs
 	/**
 	 * Выводит изображение в браузер.
 	 */
-	public function output($quality = 90)
+	public function output($quality = 100)
 	{
 		switch ($this->type) {
 			case 1: 
@@ -684,7 +715,7 @@ class Thumbs
 	/**
 	 * Выводит изображение в браузер и Сохраняет его.
 	 */
-	public function saveOut($filename, $quality = 90)
+	public function saveOut($filename, $quality = 100)
 	{
 		if (empty($filename)) {
 			$filename = $this->filename;
